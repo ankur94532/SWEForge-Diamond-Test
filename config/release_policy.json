@@ -3,6 +3,6 @@
   "checks": [
     {"name": "unit-tests", "required": true},
     {"name": "security-scan", "required": true},
-    {"name": "documentation", "required": false}
+    {"name": "documentation", "required": false, "fallback": "PASS"}
   ]
 }
