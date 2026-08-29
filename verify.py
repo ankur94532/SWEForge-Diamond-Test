@@ -1,40 +1,150 @@
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).parent
-STATE = ROOT / "state"
+from src.release_readiness.config_loader import load_policy
+from src.release_readiness.models import CheckPolicy, CheckResult, ReleasePolicy
+from src.release_readiness.readiness import MissingStatusError, evaluate_readiness
+from src.release_readiness.report import build_report
 
-REQUIRED_DONE = {
-    "A": ("A",),
-    "B": ("A", "B"),
-    "C": ("A", "C"),
-    "D": ("A", "B", "C", "D"),
+ROOT = Path(__file__).parent
+STAGES = ("baseline", "model", "loader", "readiness", "report")
+
+
+def verify_baseline() -> None:
+    subprocess.run(
+        [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+        cwd=ROOT,
+        check=True,
+    )
+
+
+def verify_model() -> None:
+    policy = CheckPolicy("optional-docs", required=False, fallback="PASS")
+    assert policy.fallback == "PASS"
+    explicit = CheckResult("unit-tests", "PASS", source="explicit")
+    fallback = CheckResult("optional-docs", "PASS", source="fallback")
+    assert explicit.source == "explicit"
+    assert fallback.source == "fallback"
+
+
+def policy_file(checks: list[dict[str, object]]) -> Path:
+    handle = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+    with handle:
+        json.dump({"version": 1, "checks": checks}, handle)
+    return Path(handle.name)
+
+
+def verify_loader() -> None:
+    valid = policy_file(
+        [
+            {"name": "unit-tests", "required": True},
+            {"name": "optional-docs", "required": False, "fallback": "PASS"},
+        ]
+    )
+    try:
+        policy = load_policy(valid)
+        assert policy.checks[1].fallback == "PASS"
+    finally:
+        valid.unlink()
+
+    for checks in (
+        [{"name": "required", "required": True, "fallback": "PASS"}],
+        [{"name": "optional", "required": False, "fallback": "UNKNOWN"}],
+    ):
+        invalid = policy_file(checks)
+        try:
+            try:
+                load_policy(invalid)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("invalid fallback configuration was accepted")
+        finally:
+            invalid.unlink()
+
+
+def fallback_policy():
+    path = policy_file(
+        [
+            {"name": "unit-tests", "required": True},
+            {"name": "optional-docs", "required": False, "fallback": "PASS"},
+        ]
+    )
+    try:
+        return load_policy(path)
+    finally:
+        path.unlink()
+
+
+def verify_readiness() -> None:
+    policy = ReleasePolicy(
+        version=1,
+        checks=(
+            CheckPolicy("unit-tests", required=True),
+            CheckPolicy("optional-docs", required=False, fallback="PASS"),
+        ),
+    )
+    mixed = evaluate_readiness(policy, {"unit-tests": "PASS"})
+    assert mixed.ready is True
+    assert [(item.name, item.status, item.source) for item in mixed.checks] == [
+        ("unit-tests", "PASS", "explicit"),
+        ("optional-docs", "PASS", "fallback"),
+    ]
+    try:
+        evaluate_readiness(policy, {"optional-docs": "PASS"})
+    except MissingStatusError as exc:
+        assert "unit-tests" in str(exc)
+    else:
+        raise AssertionError("missing required check did not fail")
+
+
+def verify_report() -> None:
+    policy = fallback_policy()
+    all_explicit = build_report(
+        evaluate_readiness(
+            policy, {"unit-tests": "PASS", "optional-docs": "FAIL"}
+        )
+    )
+    assert all_explicit == {
+        "ready": False,
+        "checks": [
+            {"name": "unit-tests", "status": "PASS", "source": "explicit"},
+            {"name": "optional-docs", "status": "FAIL", "source": "explicit"},
+        ],
+    }
+    mixed = build_report(evaluate_readiness(policy, {"unit-tests": "PASS"}))
+    assert mixed["checks"][1] == {
+        "name": "optional-docs",
+        "status": "PASS",
+        "source": "fallback",
+    }
+    verify_baseline()
+
+
+VERIFY = {
+    "baseline": verify_baseline,
+    "model": verify_model,
+    "loader": verify_loader,
+    "readiness": verify_readiness,
+    "report": verify_report,
 }
 
 
-def read_state(task: str) -> str:
-    return (STATE / f"{task}.txt").read_text(encoding="utf-8").strip()
-
-
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in REQUIRED_DONE:
-        print("usage: python verify.py <A|B|C|D>", file=sys.stderr)
+    if len(sys.argv) != 2 or sys.argv[1] not in VERIFY:
+        print(f"usage: python verify.py <{'|'.join(STAGES)}>", file=sys.stderr)
         return 2
-
-    task = sys.argv[1]
-    failures = [
-        name for name in REQUIRED_DONE[task] if read_state(name) != "DONE"
-    ]
-    if failures:
-        print(
-            f"{task} validation failed; expected DONE for: {', '.join(failures)}",
-            file=sys.stderr,
-        )
+    try:
+        VERIFY[sys.argv[1]]()
+    except Exception as exc:
+        print(f"{sys.argv[1]} verification failed: {exc}", file=sys.stderr)
         return 1
-
-    print(f"{task} validation passed")
+    print(f"{sys.argv[1]} verification passed")
     return 0
 
 

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "checks": [
+    {"name": "unit-tests", "required": true},
+    {"name": "security-scan", "required": true},
+    {"name": "documentation", "required": false}
+  ]
+}

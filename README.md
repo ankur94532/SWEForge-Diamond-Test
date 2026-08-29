@@ -1,30 +1,14 @@
-# SWEForge Diamond Workflow Test
+# Release Readiness
 
-This repository is a deliberately tiny live fixture for testing SWEForge's declarative serial workflow runtime.
+This small Python package evaluates whether a release is ready from a configured set of checks. Policies declare required and optional checks, callers provide explicit `PASS` or `FAIL` statuses, and the package returns a structured evaluation and JSON-compatible report.
 
-The workflow dependency graph is:
+The current behavior intentionally requires an explicit status for every configured check. Policy files reject unknown fields and unsupported schema versions so configuration mistakes fail clearly.
 
-```text
-    A
-   / \
-  B   C
-   \ /
-    D
+Run the baseline checks with:
+
+```bash
+python -m unittest discover -s tests -v
+python verify.py baseline
 ```
 
-SWEForge must still execute it strictly serially in declaration order:
-
-```text
-A -> B -> C -> D
-```
-
-Each task changes exactly one file under `state/` from `PENDING` to `DONE`.
-
-- A may change only `state/A.txt`.
-- B may change only `state/B.txt` and must observe A as `DONE` first.
-- C may change only `state/C.txt` and must observe A as `DONE` first.
-- D may change only `state/D.txt` and must observe both B and C as `DONE` first.
-
-`verify.py <TASK>` performs the deterministic dependency/state check for that task. The final expected repository state is that all four files contain exactly `DONE`.
-
-This repository contains only the untrusted code fixture. The workflow specification and phase skills are trusted operator configuration and intentionally live outside this repository.
+The project uses only the Python standard library.
