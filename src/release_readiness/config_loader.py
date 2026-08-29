@@ -7,6 +7,8 @@ from pathlib import Path
 
 from .models import CheckPolicy, ReleasePolicy
 
+SUPPORTED_FALLBACKS = frozenset({"PASS", "FAIL"})
+
 
 def load_policy(path: str | Path) -> ReleasePolicy:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -20,16 +22,26 @@ def load_policy(path: str | Path) -> ReleasePolicy:
     checks: list[CheckPolicy] = []
     seen: set[str] = set()
     for item in raw["checks"]:
-        if not isinstance(item, dict) or set(item) != {"name", "required"}:
-            raise ValueError("each check must contain only name and required")
+        if not isinstance(item, dict) or not set(item) <= {"name", "required", "fallback"}:
+            raise ValueError("each check must contain only name, required, and optional fallback")
+        if "name" not in item or "required" not in item:
+            raise ValueError("each check must contain name and required")
         name = item["name"]
         required = item["required"]
+        fallback = item.get("fallback")
         if not isinstance(name, str) or not name.strip():
             raise ValueError("check name must be a non-empty string")
         if name in seen:
             raise ValueError(f"duplicate check: {name}")
         if not isinstance(required, bool):
             raise ValueError(f"required must be boolean for {name}")
+        if fallback is not None:
+            if not isinstance(fallback, str):
+                raise ValueError(f"fallback must be a string for {name}")
+            if required:
+                raise ValueError(f"required check cannot define fallback: {name}")
+            if fallback not in SUPPORTED_FALLBACKS:
+                raise ValueError(f"unsupported fallback for {name}: {fallback}")
         seen.add(name)
-        checks.append(CheckPolicy(name=name, required=required))
+        checks.append(CheckPolicy(name=name, required=required, fallback=fallback))
     return ReleasePolicy(version=1, checks=tuple(checks))

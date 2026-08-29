@@ -23,12 +23,24 @@ def evaluate_readiness(
 
     results: list[CheckResult] = []
     for check in policy.checks:
-        if check.name not in statuses:
-            raise MissingStatusError(f"missing status for {check.name}")
-        status = statuses[check.name]
-        if status not in SUPPORTED_STATUSES:
-            raise ValueError(f"unsupported status for {check.name}: {status}")
-        results.append(CheckResult(name=check.name, status=status))
+        if check.name in statuses:
+            status = statuses[check.name]
+            if status not in SUPPORTED_STATUSES:
+                raise ValueError(f"unsupported status for {check.name}: {status}")
+            results.append(
+                CheckResult(name=check.name, status=status, source="explicit")
+            )
+            continue
+        if not check.required and check.fallback is not None:
+            results.append(
+                CheckResult(
+                    name=check.name,
+                    status=check.fallback,
+                    source="fallback",
+                )
+            )
+            continue
+        raise MissingStatusError(f"missing status for {check.name}")
     return ReadinessEvaluation(
         ready=all(item.status == "PASS" for item in results),
         checks=tuple(results),
