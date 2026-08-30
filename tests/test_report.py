@@ -7,18 +7,47 @@ from src.release_readiness.report import build_report
 
 
 class ReportTests(unittest.TestCase):
-    def test_preserves_public_shape(self):
+    def test_all_explicit_report_includes_source(self):
         report = build_report(
             ReadinessEvaluation(
                 ready=True,
-                checks=(CheckResult("unit-tests", "PASS"),),
+                checks=(
+                    CheckResult("unit-tests", "PASS", source="explicit"),
+                    CheckResult("documentation", "PASS", source="explicit"),
+                ),
             )
         )
+
         self.assertEqual(
             report,
             {
                 "ready": True,
-                "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "checks": [
+                    {"name": "unit-tests", "status": "PASS", "source": "explicit"},
+                    {"name": "documentation", "status": "PASS", "source": "explicit"},
+                ],
+            },
+        )
+
+    def test_mixed_explicit_and_fallback_report_includes_source(self):
+        report = build_report(
+            ReadinessEvaluation(
+                ready=True,
+                checks=(
+                    CheckResult("unit-tests", "PASS", source="explicit"),
+                    CheckResult("documentation", "PASS", source="fallback"),
+                ),
+            )
+        )
+
+        self.assertEqual(
+            report,
+            {
+                "ready": True,
+                "checks": [
+                    {"name": "unit-tests", "status": "PASS", "source": "explicit"},
+                    {"name": "documentation", "status": "PASS", "source": "fallback"},
+                ],
             },
         )
 
