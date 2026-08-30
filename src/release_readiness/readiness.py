@@ -10,7 +10,8 @@ SUPPORTED_STATUSES = frozenset({"PASS", "FAIL"})
 
 
 class MissingStatusError(ValueError):
-    """Raised when a configured check has no explicit status."""
+    """Raised when a configured check has no explicit status and no usable
+    fallback."""
 
 
 def evaluate_readiness(
@@ -23,12 +24,20 @@ def evaluate_readiness(
 
     results: list[CheckResult] = []
     for check in policy.checks:
-        if check.name not in statuses:
+        if check.name in statuses:
+            status = statuses[check.name]
+            source = "explicit"
+        elif check.required:
             raise MissingStatusError(f"missing status for {check.name}")
-        status = statuses[check.name]
+        elif check.fallback is not None:
+            status = check.fallback
+            source = "fallback"
+        else:
+            raise MissingStatusError(f"missing status for {check.name}")
+
         if status not in SUPPORTED_STATUSES:
             raise ValueError(f"unsupported status for {check.name}: {status}")
-        results.append(CheckResult(name=check.name, status=status))
+        results.append(CheckResult(name=check.name, status=status, source=source))
     return ReadinessEvaluation(
         ready=all(item.status == "PASS" for item in results),
         checks=tuple(results),
