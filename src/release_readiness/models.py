@@ -9,6 +9,7 @@ from dataclasses import dataclass
 class CheckPolicy:
     name: str
     required: bool
+    fallback: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +22,7 @@ class ReleasePolicy:
 class CheckResult:
     name: str
     status: str
+    source: str = "explicit"
 
 
 @dataclass(frozen=True, slots=True)

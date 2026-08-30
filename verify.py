@@ -7,7 +7,12 @@ import tempfile
 from pathlib import Path
 
 from src.release_readiness.config_loader import load_policy
-from src.release_readiness.models import CheckPolicy, CheckResult, ReleasePolicy
+from src.release_readiness.models import (
+    CheckPolicy,
+    CheckResult,
+    ReadinessEvaluation,
+    ReleasePolicy,
+)
 from src.release_readiness.readiness import MissingStatusError, evaluate_readiness
 from src.release_readiness.report import build_report
 
@@ -112,17 +117,34 @@ def verify_report() -> None:
     )
     assert all_explicit == {
         "ready": False,
+        "summary": {"total": 2, "passed": 1, "failed": 1},
+        "failed_checks": ["optional-docs"],
         "checks": [
             {"name": "unit-tests", "status": "PASS", "source": "explicit"},
             {"name": "optional-docs", "status": "FAIL", "source": "explicit"},
         ],
     }
     mixed = build_report(evaluate_readiness(policy, {"unit-tests": "PASS"}))
-    assert mixed["checks"][1] == {
-        "name": "optional-docs",
-        "status": "PASS",
-        "source": "fallback",
+    assert mixed == {
+        "ready": True,
+        "summary": {"total": 2, "passed": 2, "failed": 0},
+        "failed_checks": [],
+        "checks": [
+            {"name": "unit-tests", "status": "PASS", "source": "explicit"},
+            {"name": "optional-docs", "status": "PASS", "source": "fallback"},
+        ],
     }
+    ordered_failures = build_report(
+        ReadinessEvaluation(
+            ready=False,
+            checks=(
+                CheckResult("unit-tests", "FAIL"),
+                CheckResult("optional-docs", "PASS", source="fallback"),
+                CheckResult("security", "FAIL"),
+            ),
+        )
+    )
+    assert ordered_failures["failed_checks"] == ["unit-tests", "security"]
     verify_baseline()
 
 
