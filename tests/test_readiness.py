@@ -28,6 +28,14 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertFalse(result.ready)
 
+    def test_unknown_status_is_an_error(self):
+        with self.assertRaisesRegex(
+            ValueError, "unsupported status for documentation: UNKNOWN"
+        ):
+            evaluate_readiness(
+                POLICY, {"unit-tests": "PASS", "documentation": "UNKNOWN"}
+            )
+
     def test_missing_status_is_an_error(self):
         with self.assertRaisesRegex(MissingStatusError, "documentation"):
             evaluate_readiness(POLICY, {"unit-tests": "PASS"})
