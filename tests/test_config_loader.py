@@ -31,6 +31,39 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertEqual(
             [item.name for item in policy.checks], ["unit-tests", "documentation"]
         )
+        self.assertEqual(
+            [item.severity for item in policy.checks], ["blocker", "blocker"]
+        )
+
+    def test_loads_advisory_severity(self):
+        policy = self.load(
+            {
+                "version": 1,
+                "checks": [
+                    {
+                        "name": "documentation",
+                        "required": False,
+                        "severity": "advisory",
+                    }
+                ],
+            }
+        )
+        self.assertEqual(policy.checks[0].severity, "advisory")
+
+    def test_rejects_invalid_severity(self):
+        with self.assertRaisesRegex(ValueError, "severity must be 'blocker' or 'advisory'"):
+            self.load(
+                {
+                    "version": 1,
+                    "checks": [
+                        {
+                            "name": "unit-tests",
+                            "required": True,
+                            "severity": "critical",
+                        }
+                    ],
+                }
+            )
 
     def test_rejects_unknown_check_fields(self):
         with self.assertRaisesRegex(ValueError, "only name and required"):

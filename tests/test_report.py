@@ -18,9 +18,30 @@ class ReportTests(unittest.TestCase):
             report,
             {
                 "ready": True,
-                "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "checks": [
+                    {
+                        "name": "unit-tests",
+                        "status": "PASS",
+                        "severity": "blocker",
+                    }
+                ],
+                "severity_counts": {"blocker": 1, "advisory": 0},
             },
         )
+
+    def test_counts_each_check_by_severity(self):
+        report = build_report(
+            ReadinessEvaluation(
+                ready=False,
+                checks=(
+                    CheckResult("unit-tests", "FAIL"),
+                    CheckResult("documentation", "FAIL", severity="advisory"),
+                    CheckResult("security", "PASS", severity="advisory"),
+                ),
+            )
+        )
+        self.assertEqual(report["severity_counts"], {"blocker": 1, "advisory": 2})
+        self.assertEqual(list(report), ["ready", "checks", "severity_counts"])
 
 
 if __name__ == "__main__":

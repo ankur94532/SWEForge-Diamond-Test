@@ -28,6 +28,20 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertFalse(result.ready)
 
+    def test_advisory_failure_does_not_block(self):
+        policy = ReleasePolicy(
+            version=1,
+            checks=(
+                CheckPolicy("unit-tests", required=True),
+                CheckPolicy("documentation", required=False, severity="advisory"),
+            ),
+        )
+        result = evaluate_readiness(
+            policy, {"unit-tests": "PASS", "documentation": "FAIL"}
+        )
+        self.assertTrue(result.ready)
+        self.assertEqual(result.checks[1].severity, "advisory")
+
     def test_missing_status_is_an_error(self):
         with self.assertRaisesRegex(MissingStatusError, "documentation"):
             evaluate_readiness(POLICY, {"unit-tests": "PASS"})
