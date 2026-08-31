@@ -15,6 +15,7 @@ class CheckPolicy:
 class ReleasePolicy:
     version: int
     checks: tuple[CheckPolicy, ...]
+    source_path: str = ""
 
 
 @dataclass(frozen=True, slots=True)
