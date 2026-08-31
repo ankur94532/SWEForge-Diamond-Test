@@ -18,7 +18,13 @@ class ReportTests(unittest.TestCase):
             report,
             {
                 "ready": True,
-                "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "checks": [
+                    {
+                        "name": "unit-tests",
+                        "status": "PASS",
+                        "severity": "blocker",
+                    }
+                ],
             },
         )
 

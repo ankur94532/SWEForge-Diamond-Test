@@ -9,6 +9,11 @@ def build_report(evaluation: ReadinessEvaluation) -> dict[str, object]:
     return {
         "ready": evaluation.ready,
         "checks": [
-            {"name": item.name, "status": item.status} for item in evaluation.checks
+            {
+                "name": item.name,
+                "status": item.status,
+                "severity": item.severity,
+            }
+            for item in evaluation.checks
         ],
     }

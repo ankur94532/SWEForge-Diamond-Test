@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
+
+
+Severity = Literal["blocker", "advisory"]
 
 
 @dataclass(frozen=True, slots=True)
 class CheckPolicy:
     name: str
     required: bool
+    severity: Severity = "blocker"
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +26,7 @@ class ReleasePolicy:
 class CheckResult:
     name: str
     status: str
+    severity: Severity = "blocker"
 
 
 @dataclass(frozen=True, slots=True)

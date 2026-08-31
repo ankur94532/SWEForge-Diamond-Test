@@ -28,8 +28,17 @@ def evaluate_readiness(
         status = statuses[check.name]
         if status not in SUPPORTED_STATUSES:
             raise ValueError(f"unsupported status for {check.name}: {status}")
-        results.append(CheckResult(name=check.name, status=status))
+        results.append(
+            CheckResult(
+                name=check.name,
+                status=status,
+                severity=check.severity,
+            )
+        )
     return ReadinessEvaluation(
-        ready=all(item.status == "PASS" for item in results),
+        ready=all(
+            item.status == "PASS" or item.severity == "advisory"
+            for item in results
+        ),
         checks=tuple(results),
     )

@@ -20,16 +20,28 @@ def load_policy(path: str | Path) -> ReleasePolicy:
     checks: list[CheckPolicy] = []
     seen: set[str] = set()
     for item in raw["checks"]:
-        if not isinstance(item, dict) or set(item) != {"name", "required"}:
-            raise ValueError("each check must contain only name and required")
+        if not isinstance(item, dict) or set(item) not in (
+            {"name", "required"},
+            {"name", "required", "severity"},
+        ):
+            raise ValueError(
+                "each check must contain only name and required, with optional severity"
+            )
         name = item["name"]
         required = item["required"]
+        severity = item.get("severity", "blocker")
         if not isinstance(name, str) or not name.strip():
             raise ValueError("check name must be a non-empty string")
         if name in seen:
             raise ValueError(f"duplicate check: {name}")
         if not isinstance(required, bool):
             raise ValueError(f"required must be boolean for {name}")
+        if not isinstance(severity, str) or severity not in {"blocker", "advisory"}:
+            raise ValueError(
+                f"severity must be 'blocker' or 'advisory' for {name}"
+            )
         seen.add(name)
-        checks.append(CheckPolicy(name=name, required=required))
+        checks.append(
+            CheckPolicy(name=name, required=required, severity=severity)
+        )
     return ReleasePolicy(version=1, checks=tuple(checks))
