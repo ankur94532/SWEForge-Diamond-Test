@@ -19,8 +19,32 @@ class ReportTests(unittest.TestCase):
             {
                 "ready": True,
                 "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "status_counts": {"PASS": 1, "FAIL": 0},
             },
         )
+
+    def test_summarizes_status_counts(self):
+        report = build_report(
+            ReadinessEvaluation(
+                ready=False,
+                checks=(
+                    CheckResult("unit-tests", "PASS"),
+                    CheckResult("lint", "FAIL"),
+                    CheckResult("integration", "PASS"),
+                ),
+            )
+        )
+
+        self.assertEqual(report["ready"], False)
+        self.assertEqual(
+            report["checks"],
+            [
+                {"name": "unit-tests", "status": "PASS"},
+                {"name": "lint", "status": "FAIL"},
+                {"name": "integration", "status": "PASS"},
+            ],
+        )
+        self.assertEqual(report["status_counts"], {"PASS": 2, "FAIL": 1})
 
 
 if __name__ == "__main__":
