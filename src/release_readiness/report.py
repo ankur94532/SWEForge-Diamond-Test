@@ -11,4 +11,5 @@ def build_report(evaluation: ReadinessEvaluation) -> dict[str, object]:
         "checks": [
             {"name": item.name, "status": item.status} for item in evaluation.checks
         ],
+        "source_path": evaluation.source_path,
     }

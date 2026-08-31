@@ -28,3 +28,4 @@ class CheckResult:
 class ReadinessEvaluation:
     ready: bool
     checks: tuple[CheckResult, ...]
+    source_path: str = ""
