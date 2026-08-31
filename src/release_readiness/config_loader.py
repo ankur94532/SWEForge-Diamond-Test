@@ -9,7 +9,8 @@ from .models import CheckPolicy, ReleasePolicy
 
 
 def load_policy(path: str | Path) -> ReleasePolicy:
-    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    policy_path = Path(path)
+    raw = json.loads(policy_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or set(raw) != {"version", "checks"}:
         raise ValueError("policy must contain only version and checks")
     if raw["version"] != 1:
@@ -32,4 +33,8 @@ def load_policy(path: str | Path) -> ReleasePolicy:
             raise ValueError(f"required must be boolean for {name}")
         seen.add(name)
         checks.append(CheckPolicy(name=name, required=required))
-    return ReleasePolicy(version=1, checks=tuple(checks))
+    return ReleasePolicy(
+        version=1,
+        checks=tuple(checks),
+        source_path=str(policy_path),
+    )
