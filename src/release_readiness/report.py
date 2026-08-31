@@ -16,4 +16,5 @@ def build_report(evaluation: ReadinessEvaluation) -> dict[str, object]:
         "ready": evaluation.ready,
         "checks": checks,
         "status_counts": status_counts,
+        "total_checks": len(checks),
     }

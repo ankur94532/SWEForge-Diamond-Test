@@ -20,6 +20,7 @@ class ReportTests(unittest.TestCase):
                 "ready": True,
                 "checks": [{"name": "unit-tests", "status": "PASS"}],
                 "status_counts": {"PASS": 1, "FAIL": 0},
+                "total_checks": 1,
             },
         )
 
@@ -45,6 +46,7 @@ class ReportTests(unittest.TestCase):
             ],
         )
         self.assertEqual(report["status_counts"], {"PASS": 2, "FAIL": 1})
+        self.assertEqual(report["total_checks"], 3)
 
 
 if __name__ == "__main__":
