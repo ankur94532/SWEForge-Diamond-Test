@@ -19,8 +19,21 @@ class ReportTests(unittest.TestCase):
             {
                 "ready": True,
                 "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "check_count": 1,
             },
         )
+
+    def test_reports_check_count(self):
+        report = build_report(
+            ReadinessEvaluation(
+                ready=False,
+                checks=(
+                    CheckResult("unit-tests", "PASS"),
+                    CheckResult("documentation", "FAIL"),
+                ),
+            )
+        )
+        self.assertEqual(report["check_count"], 2)
 
 
 if __name__ == "__main__":
