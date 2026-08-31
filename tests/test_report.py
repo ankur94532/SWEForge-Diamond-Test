@@ -12,6 +12,7 @@ class ReportTests(unittest.TestCase):
             ReadinessEvaluation(
                 ready=True,
                 checks=(CheckResult("unit-tests", "PASS"),),
+                policy_version=1,
             )
         )
         self.assertEqual(
@@ -19,6 +20,7 @@ class ReportTests(unittest.TestCase):
             {
                 "ready": True,
                 "checks": [{"name": "unit-tests", "status": "PASS"}],
+                "policy_version": 1,
             },
         )
 

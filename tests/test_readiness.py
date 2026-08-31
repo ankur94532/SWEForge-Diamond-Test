@@ -28,6 +28,12 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertFalse(result.ready)
 
+    def test_evaluation_tracks_policy_version(self):
+        result = evaluate_readiness(
+            POLICY, {"unit-tests": "PASS", "documentation": "PASS"}
+        )
+        self.assertEqual(result.policy_version, 1)
+
     def test_missing_status_is_an_error(self):
         with self.assertRaisesRegex(MissingStatusError, "documentation"):
             evaluate_readiness(POLICY, {"unit-tests": "PASS"})
