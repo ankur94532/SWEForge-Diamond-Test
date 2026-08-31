@@ -12,7 +12,7 @@ from src.release_readiness.readiness import MissingStatusError, evaluate_readine
 from src.release_readiness.report import build_report
 
 ROOT = Path(__file__).parent
-STAGES = ("baseline", "model", "loader", "readiness", "report")
+STAGES = ("baseline", "model", "loader", "readiness", "report-contract")
 
 
 def verify_baseline() -> None:
@@ -131,7 +131,7 @@ VERIFY = {
     "model": verify_model,
     "loader": verify_loader,
     "readiness": verify_readiness,
-    "report": verify_report,
+    "report-contract": verify_report,
 }
 
 
