@@ -32,4 +32,5 @@ def evaluate_readiness(
     return ReadinessEvaluation(
         ready=all(item.status == "PASS" for item in results),
         checks=tuple(results),
+        policy_version=policy.version,
     )

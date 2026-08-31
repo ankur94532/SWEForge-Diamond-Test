@@ -27,3 +27,4 @@ class CheckResult:
 class ReadinessEvaluation:
     ready: bool
     checks: tuple[CheckResult, ...]
+    policy_version: int
